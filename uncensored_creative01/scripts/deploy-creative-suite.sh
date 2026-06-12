@@ -21,6 +21,9 @@ MODEL_DIR="${F013_MODEL_DIR:-${ROOT}/workspace/models}"
 OUTPUT_DIR="${F013_OUTPUT_DIR:-${ROOT}/workspace/outputs}"
 CREATIVE_DIR="${F013_CREATIVE_DIR:-${ROOT}/workspace/creative}"
 CACHE_DIR="${F015_CACHE_DIR:-${ROOT}/workspace/cache/xforce_dockers/uncensored_creative01}"
+CACHE_CONTAINER_DIR="${F015_CACHE_CONTAINER_DIR:-/workspace/cache/xforce_dockers/uncensored_creative01}"
+WHEELHOUSE_DIR="${F015_WHEELHOUSE_DIR:-${CACHE_DIR}/wheelhouse}"
+PIP_CACHE_DIR="${F015_PIP_CACHE_DIR:-${CACHE_DIR}/pip-cache}"
 
 DOCKER_CPUS="${F013_DOCKER_CPUS:-}"
 DOCKER_CPUSET_CPUS="${F013_DOCKER_CPUSET_CPUS:-}"
@@ -72,6 +75,46 @@ append_docker_flag() {
   fi
 }
 
+container_cache_mount_source() {
+  local container="$1"
+  $DOCKER inspect "$container" --format "{{range .Mounts}}{{if eq .Destination \"${CACHE_CONTAINER_DIR}\"}}{{.Type}} {{.Source}}{{end}}{{end}}" 2>/dev/null || true
+}
+
+container_has_expected_cache_mount() {
+  local container="$1"
+  local mount_source
+  mount_source="$(container_cache_mount_source "$container")"
+  [ "$mount_source" = "bind ${CACHE_DIR}" ]
+}
+
+container_path_has_files() {
+  local container="$1"
+  local path="$2"
+  local pattern="$3"
+  $DOCKER exec "$container" sh -lc "test -d '$path' && find '$path' -maxdepth 1 -type f -name '$pattern' -print -quit | grep -q ." >/dev/null 2>&1
+}
+
+migrate_container_dir_to_host() {
+  local container="$1"
+  local container_path="$2"
+  local host_path="$3"
+  local marker_pattern="$4"
+  if container_path_has_files "$container" "$container_path" "$marker_pattern"; then
+    mkdir -p "$host_path"
+    log "migrating legacy container cache ${container}:${container_path} -> ${host_path}"
+    $DOCKER cp "${container}:${container_path}/." "$host_path/"
+  fi
+}
+
+migrate_legacy_container_cache() {
+  local container="$1"
+  mkdir -p "$CACHE_DIR" "$WHEELHOUSE_DIR" "$PIP_CACHE_DIR"
+  migrate_container_dir_to_host "$container" "/opt/creative/wheelhouse" "$WHEELHOUSE_DIR" "*.whl"
+  migrate_container_dir_to_host "$container" "${CACHE_CONTAINER_DIR}/wheelhouse" "$WHEELHOUSE_DIR" "*.whl"
+  migrate_container_dir_to_host "$container" "${CACHE_CONTAINER_DIR}/pip-cache" "$PIP_CACHE_DIR" "*"
+  migrate_container_dir_to_host "$container" "${CACHE_CONTAINER_DIR}/artifacts" "${CACHE_DIR}/artifacts" "*"
+}
+
 apply_resource_profile() {
   case "$RESOURCE_PROFILE" in
     custom|default|none|"")
@@ -112,11 +155,17 @@ apply_resource_profile() {
 
 apply_resource_profile
 
-mkdir -p "$MODEL_DIR" "$OUTPUT_DIR" "$CREATIVE_DIR" "$CACHE_DIR" "${ROOT}/logs"
+mkdir -p "$MODEL_DIR" "$OUTPUT_DIR" "$CREATIVE_DIR" "$CACHE_DIR" "$WHEELHOUSE_DIR" "$PIP_CACHE_DIR" "${ROOT}/logs"
 
 log "resource profile name=${RESOURCE_PROFILE} cpus=${DOCKER_CPUS:-default} cpuset=${DOCKER_CPUSET_CPUS:-default} memory=${DOCKER_MEMORY:-default} swap=${DOCKER_MEMORY_SWAP:-default} shm=${DOCKER_SHM_SIZE:-default} pids=${DOCKER_PIDS_LIMIT:-default} gpus=${DOCKER_GPUS} storage=${DOCKER_STORAGE_SIZE:-default}"
 
 if $DOCKER inspect "$CONTAINER" >/dev/null 2>&1; then
+  if ! container_has_expected_cache_mount "$CONTAINER"; then
+    existing_cache_mount="$(container_cache_mount_source "$CONTAINER")"
+    log "container cache mount mismatch: expected bind ${CACHE_DIR} -> ${CACHE_CONTAINER_DIR}; current=${existing_cache_mount:-none}; recreating to preserve wheelhouse on host"
+    migrate_legacy_container_cache "$CONTAINER"
+    RECREATE=1
+  fi
   if [ "$RECREATE" = "1" ]; then
     log "removing existing container: ${CONTAINER}"
     $DOCKER rm -f "$CONTAINER" >/dev/null
@@ -154,11 +203,13 @@ if ! $DOCKER inspect "$CONTAINER" >/dev/null 2>&1; then
     -e CREATIVE_DEPLOY_PIDS_LIMIT="${DOCKER_PIDS_LIMIT}" \
     -e CREATIVE_DEPLOY_GPUS="${DOCKER_GPUS}" \
     -e CREATIVE_DEPLOY_STORAGE_SIZE="${DOCKER_STORAGE_SIZE}" \
-    -e CREATIVE_CACHE_ROOT="/workspace/cache/xforce_dockers/uncensored_creative01" \
+    -e CREATIVE_CACHE_ROOT="${CACHE_CONTAINER_DIR}" \
+    -e CREATIVE_WHEELHOUSE="${CACHE_CONTAINER_DIR}/wheelhouse" \
+    -e PIP_CACHE_DIR="${CACHE_CONTAINER_DIR}/pip-cache" \
     -v "${MODEL_DIR}:/workspace/models" \
     -v "${OUTPUT_DIR}:/workspace/outputs" \
     -v "${CREATIVE_DIR}:/workspace/creative" \
-    -v "${CACHE_DIR}:/workspace/cache/xforce_dockers/uncensored_creative01" \
+    -v "${CACHE_DIR}:${CACHE_CONTAINER_DIR}" \
     -p "${PORT_CADDY}:8088" \
     -p "${PORT_PORTAL}:8090" \
     -p "${PORT_COMFY}:8188" \
@@ -166,6 +217,14 @@ if ! $DOCKER inspect "$CONTAINER" >/dev/null 2>&1; then
     "$IMAGE" \
     sleep infinity >/dev/null
 fi
+
+if ! container_has_expected_cache_mount "$CONTAINER"; then
+  actual_cache_mount="$(container_cache_mount_source "$CONTAINER")"
+  log "fatal: ${CONTAINER} is not using the persistent host cache bind ${CACHE_DIR} -> ${CACHE_CONTAINER_DIR}; actual=${actual_cache_mount:-none}"
+  exit 1
+fi
+
+log "persistent cache bind active: ${CACHE_DIR} -> ${CACHE_CONTAINER_DIR}"
 
 if [ "$HYDRATE_ON_DEPLOY" = "1" ]; then
   log "hydrating creative suite cache in container"
