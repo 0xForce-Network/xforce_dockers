@@ -1,0 +1,207 @@
+name: xforce_dockers release
+
+on:
+  push:
+    tags:
+      - xforce-dockers/creative01/v*
+  workflow_dispatch:
+    inputs:
+      image:
+        description: xforce_dockers image id
+        required: true
+        default: uncensored_creative01
+      image_tag:
+        description: Release or development image tag
+        required: true
+        default: creative01-dev
+      platforms:
+        description: Comma-separated target platforms
+        required: true
+        default: linux/amd64,linux/arm64
+      push_latest:
+        description: Also publish creative01-latest tags
+        type: boolean
+        default: true
+      include_alias:
+        description: Also publish ghcr.io/0xforce-network/xforce-creative-suite tags
+        type: boolean
+        default: true
+      hydrate_mode:
+        description: Hydrate validation mode
+        required: true
+        default: verify-manifest
+      base_image:
+        description: xforce_AI base image
+        required: true
+        default: ghcr.io/xforce-ai/xforce-ai:nvidia-dev
+      no_cache:
+        description: Disable Buildx cache
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+  packages: write
+
+env:
+  IMAGE_ID: uncensored_creative01
+  APP_DIR: uncensored_creative01
+  BUILD_CONTEXT: .build-context
+  XFORCE_AI_REPOSITORY: 0xForce-Network/xforce_AI
+  IMAGE_REPOSITORY: ghcr.io/0xforce-network/xforce-dockers-uncensored-creative01
+  IMAGE_ALIAS_REPOSITORY: ghcr.io/0xforce-network/xforce-creative-suite
+
+jobs:
+  resolve-inputs:
+    runs-on: ubuntu-latest
+    outputs:
+      image: ${{ steps.resolve.outputs.image }}
+      image_tag: ${{ steps.resolve.outputs.image_tag }}
+      platforms: ${{ steps.resolve.outputs.platforms }}
+      short_sha: ${{ steps.resolve.outputs.short_sha }}
+      push_latest: ${{ steps.resolve.outputs.push_latest }}
+      include_alias: ${{ steps.resolve.outputs.include_alias }}
+      hydrate_mode: ${{ steps.resolve.outputs.hydrate_mode }}
+      base_image: ${{ steps.resolve.outputs.base_image }}
+      no_cache: ${{ steps.resolve.outputs.no_cache }}
+    steps:
+      - name: Resolve release inputs
+        id: resolve
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          if [ "${{ github.event_name }}" = workflow_dispatch ]; then
+            image="${{ inputs.image }}"
+            raw_tag="${{ inputs.image_tag }}"
+            platforms="${{ inputs.platforms }}"
+            push_latest="${{ inputs.push_latest }}"
+            include_alias="${{ inputs.include_alias }}"
+            hydrate_mode="${{ inputs.hydrate_mode }}"
+            base_image="${{ inputs.base_image }}"
+            no_cache="${{ inputs.no_cache }}"
+          else
+            image="uncensored_creative01"
+            raw_tag="${GITHUB_REF#refs/tags/xforce-dockers/creative01/}"
+            platforms="linux/amd64,linux/arm64"
+            push_latest="true"
+            include_alias="true"
+            hydrate_mode="verify-manifest"
+            base_image="ghcr.io/xforce-ai/xforce-ai:nvidia-dev"
+            no_cache="false"
+          fi
+          if [ "$image" != uncensored_creative01 ]; then
+            echo "unsupported image: $image" >&2
+            exit 2
+          fi
+          image_tag="${raw_tag#xforce-dockers/creative01/}"
+          short_sha="${GITHUB_SHA::7}"
+          {
+            echo "image=$image"
+            echo "image_tag=$image_tag"
+            echo "platforms=$platforms"
+            echo "short_sha=$short_sha"
+            echo "push_latest=$push_latest"
+            echo "include_alias=$include_alias"
+            echo "hydrate_mode=$hydrate_mode"
+            echo "base_image=$base_image"
+            echo "no_cache=$no_cache"
+          } >> "$GITHUB_OUTPUT"
+
+  preflight:
+    runs-on: ubuntu-latest
+    needs: resolve-inputs
+    steps:
+      - uses: actions/checkout@v4
+      - name: Checkout xforce_AI build companion
+        uses: actions/checkout@v4
+        with:
+          repository: ${{ env.XFORCE_AI_REPOSITORY }}
+          path: ${{ env.BUILD_CONTEXT }}/xforce_AI
+          token: ${{ secrets.XFORCE_AI_CHECKOUT_TOKEN || secrets.GITHUB_TOKEN }}
+      - name: Stage xforce_dockers build context
+        run: |
+          set -Eeuo pipefail
+          mkdir -p "${BUILD_CONTEXT}/xforce_dockers"
+          rsync -a --delete --exclude .git --exclude .build-context ./ "${BUILD_CONTEXT}/xforce_dockers/"
+      - name: Static creative suite smoke
+        working-directory: ${{ env.APP_DIR }}
+        env:
+          XFORCE_AI_DIR: ${{ github.workspace }}/${{ env.BUILD_CONTEXT }}/xforce_AI
+        run: scripts/creative-suite-smoke.sh
+      - name: Verify hydrate manifests without downloading
+        if: ${{ needs.resolve-inputs.outputs.hydrate_mode != 'none' }}
+        working-directory: ${{ env.APP_DIR }}
+        env:
+          CREATIVE_ROOT: ${{ github.workspace }}/${{ env.APP_DIR }}
+          CREATIVE_CACHE_ROOT: ${{ runner.temp }}/xforce-dockers-cache
+          CREATIVE_HYDRATE_SKIP_PIP: '1'
+          TARGETARCH: amd64
+        run: scripts/hydrate-creative-suite.sh --verify-only
+
+  build-and-push:
+    runs-on: ubuntu-latest
+    needs: [resolve-inputs, preflight]
+    steps:
+      - uses: actions/checkout@v4
+      - name: Checkout xforce_AI build companion
+        uses: actions/checkout@v4
+        with:
+          repository: ${{ env.XFORCE_AI_REPOSITORY }}
+          path: ${{ env.BUILD_CONTEXT }}/xforce_AI
+          token: ${{ secrets.XFORCE_AI_CHECKOUT_TOKEN || secrets.GITHUB_TOKEN }}
+      - name: Stage xforce_dockers build context
+        run: |
+          set -Eeuo pipefail
+          mkdir -p "${BUILD_CONTEXT}/xforce_dockers"
+          rsync -a --delete --exclude .git --exclude .build-context ./ "${BUILD_CONTEXT}/xforce_dockers/"
+      - uses: docker/setup-qemu-action@v3
+      - uses: docker/setup-buildx-action@v3
+      - name: Login to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Build and push lightweight creative image
+        working-directory: ${{ env.APP_DIR }}
+        env:
+          BUILD_CONTEXT: ${{ github.workspace }}/${{ env.BUILD_CONTEXT }}
+          IMAGE_TAG: ${{ needs.resolve-inputs.outputs.image_tag }}
+          PLATFORMS: ${{ needs.resolve-inputs.outputs.platforms }}
+          PUSH_LATEST: ${{ needs.resolve-inputs.outputs.push_latest == 'true' && '1' || '0' }}
+          INCLUDE_ALIAS: ${{ needs.resolve-inputs.outputs.include_alias == 'true' && '1' || '0' }}
+          XFORCE_BASE_IMAGE: ${{ needs.resolve-inputs.outputs.base_image }}
+          XFORCE_IMAGE_REVISION: ${{ github.sha }}
+          XFORCE_IMAGE_SOURCE: ${{ github.server_url }}/${{ github.repository }}
+          XFORCE_IMAGE_CREATED: ${{ github.event.repository.updated_at }}
+          CACHE_FROM: type=gha,scope=xforce-dockers-uncensored-creative01
+          CACHE_TO: type=gha,mode=max,scope=xforce-dockers-uncensored-creative01
+          OUTPUT_METADATA: dist/metadata/uncensored_creative01-${{ needs.resolve-inputs.outputs.image_tag }}.json
+          PUSH: '1'
+          LOAD: '0'
+          NO_CACHE: ${{ needs.resolve-inputs.outputs.no_cache == 'true' && '1' || '0' }}
+        run: scripts/build-creative-suite.sh
+      - name: Upload build metadata
+        uses: actions/upload-artifact@v4
+        with:
+          name: xforce-dockers-uncensored-creative01-${{ needs.resolve-inputs.outputs.image_tag }}-metadata
+          path: ${{ env.APP_DIR }}/dist/metadata/*.json
+
+  summarize:
+    runs-on: ubuntu-latest
+    needs: [resolve-inputs, build-and-push]
+    steps:
+      - name: Write release summary
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          {
+            echo "# xforce_dockers release"
+            echo
+            echo "- image: ${{ env.IMAGE_REPOSITORY }}:${{ needs.resolve-inputs.outputs.image_tag }}"
+            echo "- alias: ${{ env.IMAGE_ALIAS_REPOSITORY }}:${{ needs.resolve-inputs.outputs.image_tag }}"
+            echo "- platforms: ${{ needs.resolve-inputs.outputs.platforms }}"
+            echo "- hydrate mode: runtime"
+            echo
+            echo "Use digest-pinned references from GHCR package metadata for production deployment."
+          } >> "$GITHUB_STEP_SUMMARY"

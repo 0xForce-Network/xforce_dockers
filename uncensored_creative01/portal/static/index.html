@@ -1,0 +1,631 @@
+<!doctype html>
+<html lang="zh-Hans">
+
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>xforce Creative Suite · Claude Cream</title>
+    <style>
+        :root {
+            --cream: #fff7e8;
+            --cream-deep: #f2dfbd;
+            --ink: #30271f;
+            --muted: #7d6c5a;
+            --line: rgba(93, 69, 39, 0.18);
+            --accent: #b86b32;
+            --accent-soft: #f5c78f;
+            --card: rgba(255, 252, 245, 0.86);
+            --shadow: 0 24px 70px rgba(93, 69, 39, 0.14), 0 3px 14px rgba(93, 69, 39, 0.08);
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
+        .card,
+        .hero-main,
+        .status-card,
+        pre,
+        textarea,
+        input,
+        select {
+            min-width: 0;
+        }
+
+        body {
+            margin: 0;
+            color: var(--ink);
+            background:
+                radial-gradient(circle at 15% 10%, rgba(245, 199, 143, 0.42), transparent 32rem),
+                radial-gradient(circle at 90% 0%, rgba(255, 255, 255, 0.74), transparent 28rem),
+                linear-gradient(135deg, var(--cream), #f7ead3 58%, #ead2ad);
+            font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+            min-height: 100vh;
+        }
+
+        .shell {
+            max-width: 1180px;
+            margin: 0 auto;
+            padding: 42px 22px 64px;
+        }
+
+        .hero {
+            display: grid;
+            grid-template-columns: 1.4fr 0.8fr;
+            gap: 22px;
+            align-items: stretch;
+            min-width: 0;
+        }
+
+        .card {
+            background: var(--card);
+            border: 1px solid var(--line);
+            border-radius: 28px;
+            box-shadow: var(--shadow);
+            backdrop-filter: blur(14px);
+        }
+
+        .hero-main {
+            padding: 38px;
+        }
+
+        .eyebrow {
+            color: var(--accent);
+            letter-spacing: 0.16em;
+            text-transform: uppercase;
+            font-size: 12px;
+            font-weight: 800;
+        }
+
+        h1,
+        h2,
+        h3 {
+            font-family: Georgia, "Times New Roman", ui-serif, serif;
+            margin: 0;
+        }
+
+        h1 {
+            font-size: clamp(42px, 8vw, 84px);
+            line-height: 0.92;
+            letter-spacing: -0.06em;
+            margin: 14px 0 18px;
+        }
+
+        h2 {
+            font-size: 30px;
+            letter-spacing: -0.03em;
+        }
+
+        p {
+            color: var(--muted);
+            line-height: 1.72;
+        }
+
+        .pill-row {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-top: 24px;
+        }
+
+        .pill {
+            border: 1px solid var(--line);
+            border-radius: 999px;
+            padding: 9px 13px;
+            background: rgba(255, 255, 255, 0.48);
+            font-size: 13px;
+        }
+
+        .pill.ok {
+            background: #dcebd5;
+            color: #28461f;
+        }
+
+        .pill.warn {
+            background: #f4dfbd;
+            color: #67420d;
+        }
+
+        .pill.error {
+            background: #f0c9c2;
+            color: #6d2118;
+        }
+
+        .status-card {
+            padding: 26px;
+            display: flex;
+            flex-direction: column;
+            justify-content: flex-start;
+            gap: 14px;
+            overflow: hidden;
+        }
+
+        .status-window-title {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+            margin-top: 8px;
+        }
+
+        .status-output {
+            width: 100%;
+            max-width: 100%;
+            height: 38lh;
+            min-height: 0;
+            max-height: 38lh;
+            overflow: auto;
+            font-size: 12px;
+            line-height: 1.45;
+            overflow-wrap: anywhere;
+        }
+
+        .switch {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin: 20px 0;
+        }
+
+        .toggle {
+            width: 58px;
+            height: 32px;
+            border-radius: 999px;
+            background: var(--accent);
+            position: relative;
+            box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.08);
+        }
+
+        .toggle::after {
+            content: "";
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            background: #fff9ed;
+            position: absolute;
+            right: 4px;
+            top: 4px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.18);
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 18px;
+            margin-top: 20px;
+        }
+
+        .panel {
+            padding: 24px;
+            overflow: hidden;
+        }
+
+        .metric {
+            font-size: clamp(20px, 2.3vw, 30px);
+            font-family: Georgia, "Times New Roman", ui-serif, serif;
+            margin: 12px 0 4px;
+            line-height: 1.08;
+            overflow-wrap: anywhere;
+            word-break: break-word;
+        }
+
+        .resource-pie {
+            display: grid;
+            grid-template-columns: minmax(88px, 96px) minmax(0, 1fr);
+            align-items: center;
+            gap: 12px;
+            margin-top: 18px;
+        }
+
+        .pie {
+            --value: 0;
+            width: 96px;
+            height: 96px;
+            border-radius: 50%;
+            display: grid;
+            place-items: center;
+            background:
+                radial-gradient(circle at center, #fffaf0 0 52%, transparent 53%),
+                conic-gradient(var(--accent) calc(var(--value) * 1%), rgba(93, 69, 39, 0.14) 0);
+            box-shadow: inset 0 0 0 1px var(--line), 0 12px 28px rgba(93, 69, 39, 0.12);
+        }
+
+        .pie strong {
+            font-family: Georgia, "Times New Roman", ui-serif, serif;
+            font-size: 21px;
+            letter-spacing: -0.04em;
+        }
+
+        .pie-meta {
+            display: grid;
+            gap: 6px;
+            min-width: 0;
+        }
+
+        .pie-label {
+            color: var(--muted);
+            font-size: 13px;
+            line-height: 1.45;
+            overflow-wrap: anywhere;
+        }
+
+        .actions {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 12px;
+            margin-top: 22px;
+        }
+
+        .file-toolbar {
+            display: grid;
+            grid-template-columns: minmax(220px, 1fr) 160px 140px;
+            gap: 12px;
+            margin-top: 18px;
+        }
+
+        a.button,
+        button {
+            border: 0;
+            border-radius: 16px;
+            padding: 12px 16px;
+            color: #2f2117;
+            background: var(--accent-soft);
+            text-decoration: none;
+            font-weight: 800;
+            cursor: pointer;
+        }
+
+        a.button.secondary,
+        button.secondary {
+            background: rgba(255, 255, 255, 0.66);
+            border: 1px solid var(--line);
+        }
+
+        pre {
+            width: 100%;
+            max-width: 100%;
+            white-space: pre-wrap;
+            overflow: auto;
+            background: rgba(255, 255, 255, 0.58);
+            border: 1px solid var(--line);
+            border-radius: 18px;
+            padding: 14px;
+            color: #4a3c2f;
+            overflow-wrap: anywhere;
+        }
+
+        .file-list {
+            display: grid;
+            gap: 8px;
+            margin-top: 14px;
+        }
+
+        .file-item {
+            display: flex;
+            justify-content: space-between;
+            gap: 12px;
+            border-bottom: 1px solid var(--line);
+            padding: 10px 0;
+            color: var(--muted);
+        }
+
+        .file-name {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            align-items: center;
+            min-width: 0;
+        }
+
+        textarea,
+        input,
+        select {
+            width: 100%;
+            border: 1px solid var(--line);
+            border-radius: 16px;
+            background: rgba(255, 255, 255, 0.7);
+            color: var(--ink);
+            padding: 12px 14px;
+            font: 13px/1.5 ui-monospace, "SFMono-Regular", "JetBrains Mono", monospace;
+        }
+
+        .terminal-output {
+            height: 26lh;
+            min-height: 0;
+            max-height: 26lh;
+            overflow: auto;
+            background: #32281f;
+            color: #f8ead5;
+            border-color: rgba(255, 255, 255, 0.12);
+            overflow-wrap: anywhere;
+        }
+
+        @media (max-width: 900px) {
+
+            .hero,
+            .grid {
+                grid-template-columns: 1fr;
+            }
+
+            .hero-main {
+                padding: 26px;
+            }
+
+            .file-toolbar {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <main class="shell">
+        <section class="hero">
+            <div class="card hero-main">
+                <div class="eyebrow">Claude Cream · Warm Cream creative operations</div>
+                <h1>xforce Creative Suite</h1>
+                <p>面向本地 GPU 工作站的创意生产面板：Ollama 负责 CPU 串行提示词润色，ComfyUI 负责低显存图像与视频工作流，文件浏览器统一管理模型、LoRA 与输出视频。</p>
+                <div class="pill-row">
+                    <span class="pill">Warm Cream UI</span>
+                    <span class="pill">Ollama CPU · 16 threads</span>
+                    <span class="pill">ComfyUI low VRAM</span>
+                    <span class="pill">ComfyUI multi-language</span>
+                    <span class="pill">Files: models / outputs / creative</span>
+                </div>
+                <div class="actions">
+                    <a class="button" href="/comfy/" target="_blank" rel="noreferrer">打开 ComfyUI</a>
+                    <button class="secondary" id="show-outputs">浏览输出</button>
+                    <button class="secondary" id="show-services">服务 API</button>
+                </div>
+            </div>
+            <aside class="card status-card">
+                <div>
+                    <div class="eyebrow">Creative Mode</div>
+                    <div class="switch"><span class="toggle" aria-hidden="true"></span><strong>创意模式已启用</strong></div>
+                    <p>UI 开关表示本地创意工作流优先：更少排队、更明确镜头语言、更适合图像/视频提示词生产。具体模型策略由本地 Modelfile 与工作流配置决定。</p>
+                </div>
+                <div class="status-window-title">
+                    <div class="eyebrow" id="status-title">Status Console</div>
+                    <button class="secondary" id="show-status">系统状态</button>
+                </div>
+                <pre class="status-output" id="status">Loading status…</pre>
+            </aside>
+        </section>
+
+        <section class="grid">
+            <article class="card panel">
+                <div class="eyebrow">Ollama</div>
+                <h2>CPU Prompt Lab</h2>
+                <div class="resource-pie">
+                    <div class="pie" id="cpu-pie"><strong id="cpu-percent">75%</strong></div>
+                    <div class="pie-meta">
+                        <div class="metric" id="ollama-state">96/128</div>
+                        <div class="pie-label">线程占用 / 总线程</div>
+                    </div>
+                </div>
+            </article>
+            <article class="card panel">
+                <div class="eyebrow">Deployment</div>
+                <h2>VPS Profile</h2>
+                <div class="resource-pie">
+                    <div class="pie" id="docker-pie"><strong id="docker-percent">—</strong></div>
+                    <div class="pie-meta">
+                        <div class="metric" id="deploy-state">—</div>
+                        <div class="pie-label">Docker 空间占用</div>
+                    </div>
+                </div>
+            </article>
+            <article class="card panel">
+                <div class="eyebrow">ComfyUI</div>
+                <h2>GPU Studio</h2>
+                <div class="resource-pie">
+                    <div class="pie" id="vram-pie"><strong id="vram-percent">—</strong></div>
+                    <div class="pie-meta">
+                        <div class="metric" id="comfy-state">—</div>
+                        <div class="pie-label">VRAM 占用</div>
+                    </div>
+                </div>
+            </article>
+            <article class="card panel">
+                <div class="eyebrow">VRAM</div>
+                <h2>Unload Hook</h2>
+                <div class="actions"><button id="unload">释放 ComfyUI 显存</button></div>
+                <p>调用 `/api/creative/unload`，优先请求 ComfyUI free endpoint。</p>
+            </article>
+        </section>
+
+        <section class="card panel" style="margin-top: 20px;">
+            <div class="eyebrow">Files</div>
+            <h2>安全文件浏览器</h2>
+            <p>仅暴露模型、输出与创意工作目录；每页显示 15 条信息，支持简单搜索、排序与翻页，选择文件后在右侧 Creative Mode 窗口展示详情。</p>
+            <div class="actions">
+                <button class="secondary" data-root="models">模型目录</button>
+                <button class="secondary" data-root="outputs">输出目录</button>
+                <button class="secondary" data-root="creative">创意目录</button>
+            </div>
+            <div class="file-toolbar">
+                <input id="file-search" placeholder="搜索文件名或路径" />
+                <select id="file-sort" aria-label="文件排序字段">
+                    <option value="name">按名称</option>
+                    <option value="type">按类型</option>
+                    <option value="size">按大小</option>
+                    <option value="modified">按修改时间</option>
+                </select>
+                <select id="file-order" aria-label="文件排序方向">
+                    <option value="asc">升序</option>
+                    <option value="desc">降序</option>
+                </select>
+            </div>
+            <div class="file-list" id="files"></div>
+            <div class="actions">
+                <button class="secondary" id="file-prev">上一页</button>
+                <button class="secondary" id="file-next">下一页</button>
+                <span class="pill" id="file-page">Page —</span>
+            </div>
+        </section>
+
+        <section class="card panel" style="margin-top: 20px;">
+            <div class="eyebrow">Nushell TTY</div>
+            <h2>容器命令行控制台</h2>
+            <p>通过底座原生 PTY wrapper 拉起 Nushell 执行容器内命令，用于模型下载、GPU 检查、目录整理与故障诊断。该入口走同一公网认证，不应裸露给未授权用户。</p>
+            <h3>ComfyUI 模型一键部署</h3>
+            <p>在 ComfyUI 出现 missing model 时，可直接粘贴 Hugging Face / CivitAI 等模型地址；Portal 会自动把 Hugging Face `blob` 地址改写为
+                `resolve` 下载地址，并用 `aria2c` 多线程断点续传落盘到对应 ComfyUI 模型目录。</p>
+            <label class="eyebrow" for="model-url">model url</label>
+            <input id="model-url"
+                value="https://huggingface.co/stabilityai/sdxl-turbo/blob/main/sd_xl_turbo_1.0_fp16.safetensors" />
+            <div class="actions">
+                <select id="model-target">
+                    <option value="checkpoints">checkpoints</option>
+                    <option value="loras">loras</option>
+                    <option value="vae">vae</option>
+                    <option value="controlnet">controlnet</option>
+                    <option value="embeddings">embeddings</option>
+                    <option value="animatediff">animatediff</option>
+                    <option value="upscale_models">upscale_models</option>
+                    <option value="clip">clip</option>
+                    <option value="unet">unet</option>
+                    <option value="diffusion_models">diffusion_models</option>
+                    <option value="cogvideox">cogvideox</option>
+                </select>
+                <button id="model-download">后台下载 / 更新模型</button>
+            </div>
+            <pre class="terminal-output" id="model-output">等待模型地址…</pre>
+            <label class="eyebrow" for="shell-cwd">cwd</label>
+            <input id="shell-cwd" value="/workspace" />
+            <label class="eyebrow" for="shell-command" style="display:block;margin-top:12px;">command</label>
+            <textarea id="shell-command"
+                rows="6">^aria2c --continue=true --max-connection-per-server=16 --split=16 --min-split-size=8M --dir /workspace/models/checkpoints --out sd_xl_turbo_1.0_fp16.safetensors https://huggingface.co/stabilityai/sdxl-turbo/resolve/main/sd_xl_turbo_1.0_fp16.safetensors</textarea>
+            <div class="actions">
+                <button id="shell-run">执行 Nushell 命令</button>
+                <button class="secondary" id="shell-gpu">填入 GPU 检查</button>
+                <button class="secondary" id="shell-models">填入模型列表</button>
+            </div>
+            <pre class="terminal-output" id="shell-output">等待命令执行…</pre>
+        </section>
+    </main>
+
+    <script src="/api/v1/portal-assets/file-browser.js"></script>
+    <script>
+        const statusEl = document.getElementById('status');
+        const statusTitleEl = document.getElementById('status-title');
+        const filesEl = document.getElementById('files');
+        const fileState = { root: 'outputs', path: '', page: 1, pageSize: 15, search: '', sort: 'name', order: 'asc' };
+        const fmtBytes = window.XForceFileBrowser.fmtBytes;
+        const clampPercent = (value) => Math.max(0, Math.min(100, Number.isFinite(value) ? value : 0));
+        function updatePie(pieId, percentId, percent) {
+            const safePercent = clampPercent(percent);
+            document.getElementById(pieId).style.setProperty('--value', safePercent.toFixed(2));
+            document.getElementById(percentId).textContent = `${Math.round(safePercent)}%`;
+        }
+        function setStatusWindow(title, value) {
+            statusTitleEl.textContent = title;
+            statusEl.textContent = typeof value === 'string' ? value : JSON.stringify(value, null, 2);
+        }
+        async function refreshStatus() {
+            const res = await fetch('/api/creative/status');
+            const data = await res.json();
+            setStatusWindow('Status Console', data);
+            const cpuUsedThreads = 96;
+            const cpuTotalThreads = 128;
+            updatePie('cpu-pie', 'cpu-percent', (cpuUsedThreads / cpuTotalThreads) * 100);
+            document.getElementById('ollama-state').textContent = `${cpuUsedThreads}/${cpuTotalThreads}`;
+            const gpu = data.gpu || {};
+            const storage = data.storage || {};
+            const dockerStorage = storage.root || storage.workspace || {};
+            const dockerUsedBytes = Number(dockerStorage.usedBytes || 0);
+            const dockerTotalBytes = Number(dockerStorage.totalBytes || 0);
+            updatePie('docker-pie', 'docker-percent', dockerTotalBytes > 0 ? (dockerUsedBytes / dockerTotalBytes) * 100 : 0);
+            document.getElementById('deploy-state').textContent = dockerTotalBytes > 0 ? `${fmtBytes(dockerUsedBytes)}/${fmtBytes(dockerTotalBytes)}` : '—';
+            const firstGpu = (gpu.gpus || [])[0] || {};
+            const vramTotalMiB = Number(firstGpu.vramTotalMiB || 0);
+            const vramFreeMiB = Number(firstGpu.vramFreeMiB || 0);
+            const vramUsedMiB = Math.max(0, vramTotalMiB - vramFreeMiB);
+            updatePie('vram-pie', 'vram-percent', vramTotalMiB > 0 ? (vramUsedMiB / vramTotalMiB) * 100 : 0);
+            document.getElementById('comfy-state').textContent = vramTotalMiB > 0 ? `${vramUsedMiB}/${vramTotalMiB} MiB` : '—';
+            return data;
+        }
+        async function showServices() {
+            const res = await fetch('/api/v1/services');
+            const data = await res.json();
+            setStatusWindow('Service API', data);
+        }
+        const fileBrowser = window.XForceFileBrowser.create({
+            state: fileState,
+            filesEl,
+            buttonClass: 'secondary',
+            linkClass: 'button secondary',
+            metaClass: 'pill',
+            filePageEl: document.getElementById('file-page'),
+            setStatusWindow,
+            getSearch: () => document.getElementById('file-search').value,
+            getSort: () => document.getElementById('file-sort').value,
+            getOrder: () => document.getElementById('file-order').value,
+            onFile: (entry) => setStatusWindow(`File · ${entry.name}`, entry)
+        });
+        const loadFiles = fileBrowser.loadFiles;
+        document.querySelectorAll('[data-root]').forEach((button) => button.addEventListener('click', () => loadFiles(button.dataset.root, '', 1)));
+        document.getElementById('show-status').addEventListener('click', () => refreshStatus().catch((error) => setStatusWindow('Status Error', String(error))));
+        document.getElementById('show-services').addEventListener('click', () => showServices().catch((error) => setStatusWindow('Service API Error', String(error))));
+        document.getElementById('show-outputs').addEventListener('click', () => loadFiles('outputs', '', 1).catch((error) => setStatusWindow('Files Error', String(error))));
+        document.getElementById('file-search').addEventListener('input', () => loadFiles(fileState.root, fileState.path, 1).catch(() => { }));
+        document.getElementById('file-sort').addEventListener('change', () => loadFiles(fileState.root, fileState.path, 1).catch(() => { }));
+        document.getElementById('file-order').addEventListener('change', () => loadFiles(fileState.root, fileState.path, 1).catch(() => { }));
+        document.getElementById('file-prev').addEventListener('click', () => loadFiles(fileState.root, fileState.path, Math.max(1, fileState.page - 1)).catch(() => { }));
+        document.getElementById('file-next').addEventListener('click', () => loadFiles(fileState.root, fileState.path, fileState.page + 1).catch(() => { }));
+        document.getElementById('unload').addEventListener('click', async () => {
+            const res = await fetch('/api/creative/unload', { method: 'POST' });
+            setStatusWindow('VRAM Unload', await res.json());
+        });
+        document.getElementById('shell-gpu').addEventListener('click', () => {
+            document.getElementById('shell-command').value = '^nvidia-smi; print "---"; ^ls -lah /workspace/models/checkpoints';
+        });
+        document.getElementById('shell-models').addEventListener('click', () => {
+            document.getElementById('shell-command').value = '^find /workspace/models -maxdepth 3 -type f | sort | lines | first 200';
+        });
+        async function pollModelJob(jobId) {
+            const output = document.getElementById('model-output');
+            const res = await fetch(`/api/creative/models/download/${jobId}`);
+            const data = await res.json();
+            output.textContent = JSON.stringify(data, null, 2);
+            if (data.status === 'completed') {
+                output.textContent += '\n\n✅ 模型已部署完成。刷新 ComfyUI 页面或在 ComfyUI 中刷新模型列表即可。';
+                refreshStatus().catch(() => { });
+                return;
+            }
+            if (data.status === 'failed') {
+                output.textContent += '\n\n❌ 模型部署失败，请检查日志。';
+                return;
+            }
+            setTimeout(() => pollModelJob(jobId).catch((error) => { output.textContent = String(error); }), 2500);
+        }
+        document.getElementById('model-download').addEventListener('click', async () => {
+            const output = document.getElementById('model-output');
+            output.textContent = 'Starting background model deployment…';
+            const res = await fetch('/api/creative/models/download', {
+                method: 'POST',
+                headers: { 'content-type': 'application/json' },
+                body: JSON.stringify({ url: document.getElementById('model-url').value, target: document.getElementById('model-target').value })
+            });
+            const data = await res.json();
+            output.textContent = JSON.stringify(data, null, 2);
+            if (data.jobId) pollModelJob(data.jobId).catch((error) => { output.textContent = String(error); });
+        });
+        document.getElementById('shell-run').addEventListener('click', async () => {
+            const output = document.getElementById('shell-output');
+            output.textContent = 'Running…';
+            const res = await fetch('/api/creative/shell/run', {
+                method: 'POST',
+                headers: { 'content-type': 'application/json' },
+                body: JSON.stringify({ cwd: document.getElementById('shell-cwd').value, command: document.getElementById('shell-command').value, timeoutSeconds: 900 })
+            });
+            const data = await res.json();
+            output.textContent = JSON.stringify(data, null, 2);
+            setStatusWindow('Nushell Result', data);
+        });
+        refreshStatus().catch((error) => { statusEl.textContent = String(error); });
+        loadFiles('outputs').catch(() => { });
+    </script>
+</body>
+
+</html>

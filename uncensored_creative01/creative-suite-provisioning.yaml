@@ -1,0 +1,41 @@
+apiVersion: xforce.ai/v1
+kind: ProvisioningManifest
+metadata:
+  name: xforce-creative-suite
+  description: First-boot model layout for the xforce creative suite. Replace development URLs and hashes during release review.
+defaults:
+  retries: 3
+  backoff:
+    baseSeconds: 2
+    maxSeconds: 60
+stages:
+  - id: qwen25-creative-gguf-placeholder
+    type: model
+    url: https://example.invalid/models/qwen2.5-creative-q4_k_m.gguf
+    dest: /workspace/models/llm/qwen2.5-creative-q4_k_m.gguf
+    format: gguf
+    allowUnverified: true
+  - id: sdxl-fp8-checkpoint-placeholder
+    type: model
+    url: https://example.invalid/models/sdxl-fp8-e4m3fn.safetensors
+    dest: /workspace/models/checkpoints/sdxl-fp8-e4m3fn.safetensors
+    format: safetensors
+    allowUnverified: true
+  - id: sd15-checkpoint-placeholder
+    type: model
+    url: https://example.invalid/models/v1-5-pruned-emaonly.safetensors
+    dest: /workspace/models/checkpoints/v1-5-pruned-emaonly.safetensors
+    format: safetensors
+    allowUnverified: true
+  - id: animatediff-motion-module-placeholder
+    type: model
+    url: https://example.invalid/models/mm_sd_v15_v2.ckpt
+    dest: /workspace/models/animatediff/mm_sd_v15_v2.ckpt
+    format: ckpt
+    allowUnverified: true
+  - id: cogvideox-2b-fp8-placeholder
+    type: model
+    url: https://example.invalid/models/cogvideox-2b-fp8.safetensors
+    dest: /workspace/models/cogvideox/cogvideox-2b-fp8.safetensors
+    format: safetensors
+    allowUnverified: true

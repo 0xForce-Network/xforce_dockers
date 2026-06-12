@@ -1,0 +1,22 @@
+.build-context/
+dist/
+*.log
+__pycache__/
+
+# Runtime/download caches must stay out of git. Keep .gitkeep placeholders only.
+uncensored_creative01/wheelhouse/*
+!uncensored_creative01/wheelhouse/.gitkeep
+uncensored_creative01/artifacts/ollama/*
+!uncensored_creative01/artifacts/ollama/.gitkeep
+uncensored_creative01/artifacts/cloudflared/*
+!uncensored_creative01/artifacts/cloudflared/.gitkeep
+uncensored_creative01/artifacts/source-archives/*
+!uncensored_creative01/artifacts/source-archives/.gitkeep
+uncensored_creative01/artifacts/repos/ComfyUI/*
+!uncensored_creative01/artifacts/repos/ComfyUI/.gitkeep
+uncensored_creative01/artifacts/repos/ComfyUI-Manager/*
+!uncensored_creative01/artifacts/repos/ComfyUI-Manager/.gitkeep
+uncensored_creative01/artifacts/repos/ComfyUI-Ollama/*
+!uncensored_creative01/artifacts/repos/ComfyUI-Ollama/.gitkeep
+uncensored_creative01/artifacts/repos/AIGODLIKE-ComfyUI-Translation/*
+!uncensored_creative01/artifacts/repos/AIGODLIKE-ComfyUI-Translation/.gitkeep

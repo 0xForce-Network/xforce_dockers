@@ -1,0 +1,58 @@
+apiVersion: xforce.ai/services/v1
+services:
+  - name: portal-backend
+    supervisorName: portal-backend
+    title: Instance Portal Backend
+    category: core
+    protected: true
+    autostart: true
+    logMode: supervisor
+    description: Local FastAPI auth, metrics, and lifecycle backend.
+  - name: creative-portal
+    supervisorName: creative-portal
+    title: Creative Suite Portal
+    category: creative
+    protected: true
+    autostart: true
+    logMode: supervisor
+    description: Claude Cream style suite dashboard and safe file browser.
+  - name: ollama
+    supervisorName: ollama
+    title: Ollama CPU LLM Runtime
+    category: creative
+    protected: false
+    autostart: true
+    logMode: supervisor
+    description: CPU-bound prompt assistant runtime with serial scheduling.
+  - name: ollama-model-init
+    supervisorName: ollama-model-init
+    title: Ollama Model Initializer
+    category: provisioning
+    protected: false
+    autostart: true
+    logMode: supervisor
+    description: First-boot qwen2.5 creative model builder.
+  - name: comfyui
+    supervisorName: comfyui
+    title: ComfyUI GPU Studio
+    category: creative
+    protected: false
+    autostart: true
+    logMode: supervisor
+    description: Low-VRAM ComfyUI image and video workflow surface.
+  - name: caddy
+    supervisorName: caddy
+    title: Caddy Reverse Proxy
+    category: core
+    protected: true
+    autostart: false
+    logMode: supervisor
+    description: Authenticated reverse proxy surface.
+  - name: cloudflared
+    supervisorName: cloudflared
+    title: Cloudflare Tunnel
+    category: network
+    protected: false
+    autostart: false
+    logMode: supervisor
+    description: Optional quick or named Cloudflare tunnel process.

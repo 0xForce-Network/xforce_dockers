@@ -1,0 +1,10 @@
+xforce_creative:
+  base_path: /workspace/models
+  checkpoints: checkpoints
+  loras: loras
+  vae: vae
+  clip: clip
+  unet: unet
+  controlnet: controlnet
+  animatediff_models: animatediff
+  cogvideox: cogvideox

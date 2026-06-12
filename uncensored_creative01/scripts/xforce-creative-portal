@@ -1,0 +1,10 @@
+#!/usr/bin/env bash
+set -Eeuo pipefail
+
+export PYTHONPATH="/opt/creative/portal:/opt/portal-aio:${PYTHONPATH:-}"
+python_bin="${VENV_DIR:-/venv/main}/bin/python"
+if [ ! -x "$python_bin" ]; then
+  python_bin="$(command -v python3)"
+fi
+
+exec "$python_bin" -m creative_portal "$@"

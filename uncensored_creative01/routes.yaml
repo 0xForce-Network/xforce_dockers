@@ -1,0 +1,83 @@
+apiVersion: xforce.ai/routes/v1
+routes:
+  - id: health
+    match: /healthz
+    upstream: http://127.0.0.1:8080/api/v1/health
+    auth: excluded
+    preserveHost: true
+  - id: login
+    match: /__xforce_login/*
+    upstream: http://127.0.0.1:8090
+    auth: excluded
+    preserveHost: true
+  - id: favicon
+    match: /favicon.ico
+    upstream: http://127.0.0.1:8090
+    auth: excluded
+    preserveHost: true
+  - id: root-comfy-user-css
+    match: /user.css
+    upstream: http://127.0.0.1:8188/api/userdata/user.css
+    auth: excluded
+    preserveHost: true
+  - id: portal-api
+    match: /api/v1/*
+    upstream: http://127.0.0.1:8080
+    auth: required
+    preserveHost: true
+  - id: creative-api
+    match: /api/creative/*
+    upstream: http://127.0.0.1:8090
+    auth: required
+    preserveHost: true
+  - id: creative-files
+    match: /files/*
+    upstream: http://127.0.0.1:8090
+    auth: required
+    preserveHost: true
+  - id: comfy-user-css
+    match: /comfy/user.css
+    upstream: http://127.0.0.1:8090/comfy/user.css
+    auth: required
+    preserveHost: true
+  - id: comfy-ws
+    match: /comfy/ws
+    upstream: http://127.0.0.1:8188/ws
+    auth: excluded
+    preserveHost: false
+    flushInterval: -1
+    readTimeout: 24h
+    writeTimeout: 24h
+    dialTimeout: 30s
+    keepAlive: 24h
+  - id: comfyui
+    match: /comfy/*
+    upstream: http://127.0.0.1:8188
+    auth: required
+    preserveHost: false
+    stripPrefix: /comfy
+  - id: comfy-assets
+    match: /assets/*
+    upstream: http://127.0.0.1:8188
+    auth: required
+    preserveHost: false
+  - id: comfy-extensions
+    match: /extensions/*
+    upstream: http://127.0.0.1:8188
+    auth: required
+    preserveHost: false
+  - id: comfy-api
+    match: /api/*
+    upstream: http://127.0.0.1:8188
+    auth: required
+    preserveHost: true
+  - id: ollama-api
+    match: /ollama/*
+    upstream: http://127.0.0.1:11434
+    auth: required
+    preserveHost: false
+  - id: creative-portal
+    match: /
+    upstream: http://127.0.0.1:8090
+    auth: required
+    preserveHost: true
